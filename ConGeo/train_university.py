@@ -57,13 +57,13 @@ class Configuration:
     
     # Dataset
     dataset: str = 'U1652-D2S'           # 'U1652-D2S' | 'U1652-S2D'
-    data_folder: str = "./data/U1652"
+    data_folder: str = "/dataset/U1652"
     
     # Augment Images
     prob_flip: float = 0.5              # flipping the sat image and drone image simultaneously
     
     # Savepath for model checkpoints
-    model_path: str = "./university"
+    model_path: str = "/output"
     
     # Eval before training
     zero_shot: bool = False
@@ -91,15 +91,15 @@ class Configuration:
 config = Configuration() 
 
 if config.dataset == 'U1652-D2S':
-    config.query_folder_train = './data/U1652/train/satellite'
-    config.gallery_folder_train = './data/U1652/train/drone'   
-    config.query_folder_test = './data/U1652/test/query_drone' 
-    config.gallery_folder_test = './data/U1652/test/gallery_satellite'    
+    config.query_folder_train = '/dataset/U1652/train/satellite'
+    config.gallery_folder_train = '/dataset/U1652/train/drone'   
+    config.query_folder_test = '/dataset/U1652/test/query_drone' 
+    config.gallery_folder_test = '/dataset/U1652/test/gallery_satellite'    
 elif config.dataset == 'U1652-S2D':
-    config.query_folder_train = './data/U1652/train/satellite'
-    config.gallery_folder_train = './data/U1652/train/drone'    
-    config.query_folder_test = './data/U1652/test/query_satellite'
-    config.gallery_folder_test = './data/U1652/test/gallery_drone'
+    config.query_folder_train = '/dataset/U1652/train/satellite'
+    config.gallery_folder_train = '/dataset/U1652/train/drone'    
+    config.query_folder_test = '/dataset/U1652/test/query_satellite'
+    config.gallery_folder_test = '/dataset/U1652/test/gallery_drone'
 
 
 if __name__ == '__main__':

@@ -43,7 +43,7 @@ class Configuration:
     sim_sample: bool = True        # use similarity sampling
     neighbour_select: int = 64     # max selection size from pool
     neighbour_range: int = 128     # pool size for selection
-    gps_dict_path: str = "./data/VIGOR/gps_dict_same.pkl"   # gps_dict_cross.pkl | gps_dict_same.pkl
+    gps_dict_path: str = "/dataset/VIGOR/gps_dict_same.pkl"   # gps_dict_cross.pkl | gps_dict_same.pkl
  
     # Eval
     batch_size_eval: int = 128
@@ -65,7 +65,7 @@ class Configuration:
     lr_end: float = 0.0001             #  only for "polynomial"
     
     # Dataset
-    data_folder = "./data/VIGOR"
+    data_folder = "/dataset/VIGOR"
     same_area: bool = True             # True: same | False: cross
     ground_cutting = 0                 # cut ground upper and lower
    
@@ -74,7 +74,7 @@ class Configuration:
     prob_flip: float = 0.5             # flipping the sat image and ground images simultaneously
     
     # Savepath for model checkpoints
-    model_path: str = "./vigor_same"
+    model_path: str = "/output"
     
     # Eval before training
     zero_shot: bool = False  

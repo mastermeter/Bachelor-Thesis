@@ -43,7 +43,7 @@ class Configuration:
     sim_sample: bool = True        # use similarity sampling
     neighbour_select: int = 64     # max selection size from pool
     neighbour_range: int = 128     # pool size for selection
-    gps_dict_path: str = "./data/CVACT/gps_dict.pkl"   # path to pre-computed distances
+    gps_dict_path: str = "/dataset/CVACT/gps_dict.pkl"   # path to pre-computed distances
  
     # Eval
     batch_size_eval: int = 128
@@ -65,14 +65,14 @@ class Configuration:
     lr_end: float = 0.0001             #  only for "polynomial"
     
     # Dataset
-    data_folder = "./data/CVACT"     
+    data_folder = "/dataset/CVACT"     
     
     # Augment Images
     prob_rotate: float = 0.75          # rotates the sat image and ground images simultaneously
     prob_flip: float = 0.5             # flipping the sat image and ground images simultaneously
     
     # Savepath for model checkpoints
-    model_path: str = "./cvact"
+    model_path: str = "/output"
     
     # Eval before training
     zero_shot: bool = False
