@@ -1,0 +1,16 @@
+Bootstrap: docker
+From pytorch/pytorch:1.31.1-cuda11.6-cudnn8-runtime
+
+%labels
+
+AUTHOR_NAME Alexandre Venturi
+VERSION 1.0
+
+%environment
+
+%files
+    requirements.txt /opt/requirements.txt
+
+%post
+    apt-get update && apt-get install -y git gcc libgli-mesa-glx libglib2.0.0
+    pip install --no-cache-dir -r /opt/requirements.txt
