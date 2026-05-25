@@ -1,5 +1,5 @@
 Bootstrap: docker
-From: pytorch/pytorch:1.31.1-cuda11.6-cudnn8-runtime
+From: pytorch/pytorch:1.13.1-cuda11.6-cudnn8-runtime
 
 %labels
 
