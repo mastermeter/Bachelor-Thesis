@@ -38,9 +38,9 @@ class Configuration:
     
     
     # Similarity Sampling
-    custom_sampling: bool = True   # use custom sampling instead of random
-    gps_sample: bool = True        # use gps sampling
-    sim_sample: bool = True        # use similarity sampling
+    custom_sampling: bool = False   # use custom sampling instead of random
+    gps_sample: bool = False        # use gps sampling
+    sim_sample: bool = False       # use similarity sampling
     neighbour_select: int = 64     # max selection size from pool
     neighbour_range: int = 128     # pool size for selection
     gps_dict_path: str = "./data/VIGOR/gps_dict_same.pkl"   # gps_dict_cross.pkl | gps_dict_same.pkl
@@ -65,7 +65,7 @@ class Configuration:
     lr_end: float = 0.0001             #  only for "polynomial"
     
     # Dataset
-    data_folder = "./data/VIGOR"
+    data_folder = "../data/VIGOR"
     same_area: bool = True             # True: same | False: cross
     ground_cutting = 0                 # cut ground upper and lower
    

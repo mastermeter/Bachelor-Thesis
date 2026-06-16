@@ -39,7 +39,7 @@ class VigorDatasetTrain(Dataset):
         # load sat list 
         sat_list = []
         for city in self.cities:
-            df_tmp = pd.read_csv(f'{data_folder}/splits/{city}/satellite_list.txt', header=None, delim_whitespace=True)
+            df_tmp = pd.read_csv(f'{data_folder}/splits/{city}/satellite_list.txt', header=None, sep=r'\s+')
             df_tmp = df_tmp.rename(columns={0: "sat"})
             df_tmp["path"] = df_tmp.apply(lambda x: f'{data_folder}/satellite/{city}/{x.sat}', axis=1)
             sat_list.append(df_tmp)
@@ -56,9 +56,9 @@ class VigorDatasetTrain(Dataset):
         for city in self.cities:
 
             if same_area:
-                df_tmp = pd.read_csv(f'{data_folder}/splits/{city}/same_area_balanced_train.txt', header=None, delim_whitespace=True)
+                df_tmp = pd.read_csv(f'{data_folder}/splits/{city}/same_area_balanced_train.txt', header=None, sep=r'\s+')
             else:
-                df_tmp = pd.read_csv(f'{data_folder}/splits/{city}/pano_label_balanced.txt', header=None, delim_whitespace=True)
+                df_tmp = pd.read_csv(f'{data_folder}/splits/{city}/pano_label_balanced.txt', header=None, sep=r'\s+')
             
             df_tmp = df_tmp.loc[:, [0, 1, 4, 7, 10]].rename(columns={0:  "ground",
                                                                      1:  "sat",
@@ -293,14 +293,14 @@ class VigorDatasetTrainConGeo(Dataset):
         self.transforms_reference2 = transforms_reference2
         
         if same_area:
-            self.cities = ['Chicago', 'NewYork', 'SanFrancisco', 'Seattle']
+            self.cities = ['Chicago'] #'Chicago', 'NewYork', 'SanFrancisco', 'Seattle'
         else:
-            self.cities = ['NewYork', 'Seattle'] 
+            self.cities = ['Chicago'] #'Chicago', 'NewYork', 'SanFrancisco', 'Seattle'
 
         # load sat list 
         sat_list = []
         for city in self.cities:
-            df_tmp = pd.read_csv(f'{data_folder}/splits/{city}/satellite_list.txt', header=None, delim_whitespace=True)
+            df_tmp = pd.read_csv(f'{data_folder}/splits/{city}/satellite_list.txt', header=None, sep=r'\s+')
             df_tmp = df_tmp.rename(columns={0: "sat"})
             df_tmp["path"] = df_tmp.apply(lambda x: f'{data_folder}/{city}/satellite/{x.sat}', axis=1)
             sat_list.append(df_tmp)
@@ -317,9 +317,9 @@ class VigorDatasetTrainConGeo(Dataset):
         for city in self.cities:
 
             if same_area:
-                df_tmp = pd.read_csv(f'{data_folder}/splits/{city}/same_area_balanced_train.txt', header=None, delim_whitespace=True)
+                df_tmp = pd.read_csv(f'{data_folder}/splits/{city}/same_area_balanced_train.txt', header=None, sep=r'\s+')
             else:
-                df_tmp = pd.read_csv(f'{data_folder}/splits/{city}/pano_label_balanced.txt', header=None, delim_whitespace=True)
+                df_tmp = pd.read_csv(f'{data_folder}/splits/{city}/pano_label_balanced.txt', header=None, sep=r'\s+')
             
             df_tmp = df_tmp.loc[:, [0, 1, 4, 7, 10]].rename(columns={0:  "ground",
                                                                      1:  "sat",
@@ -551,17 +551,17 @@ class VigorDatasetEval(Dataset):
         
             
         if same_area:
-            self.cities = ['Chicago', 'NewYork', 'SanFrancisco', 'Seattle']
+            self.cities = ['Chicago'] #'Chicago', 'NewYork', 'SanFrancisco', 'Seattle'
         else:
             if split == "train":
-                self.cities = ['NewYork', 'Seattle'] 
+                self.cities = ['Chicago'] 
             else:
-                self.cities = ['Chicago', 'SanFrancisco'] 
+                self.cities = ['Chicago'] 
                
         # load sat list 
         sat_list = []
         for city in self.cities:
-            df_tmp = pd.read_csv(f'{data_folder}/splits/{city}/satellite_list.txt', header=None, delim_whitespace=True)
+            df_tmp = pd.read_csv(f'{data_folder}/splits/{city}/satellite_list.txt', header=None, sep=r'\s+')
             df_tmp = df_tmp.rename(columns={0: "sat"})
             df_tmp["path"] = df_tmp.apply(lambda x: f'{data_folder}/satellite/{city}/{x.sat}', axis=1)
             sat_list.append(df_tmp)
@@ -578,9 +578,9 @@ class VigorDatasetEval(Dataset):
         for city in self.cities:
             
             if same_area:
-                df_tmp = pd.read_csv(f'{data_folder}/splits/{city}/same_area_balanced_{split}.txt', header=None, delim_whitespace=True)
+                df_tmp = pd.read_csv(f'{data_folder}/splits/{city}/same_area_balanced_{split}.txt', header=None, sep=r'\s+')
             else:
-                df_tmp = pd.read_csv(f'{data_folder}/splits/{city}/pano_label_balanced.txt', header=None, delim_whitespace=True)
+                df_tmp = pd.read_csv(f'{data_folder}/splits/{city}/pano_label_balanced.txt', header=None, sep=r'\s+')
   
             
             df_tmp = df_tmp.loc[:, [0, 1, 4, 7, 10]].rename(columns={0:  "ground",
