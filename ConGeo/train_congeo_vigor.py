@@ -32,7 +32,7 @@ class Configuration:
     mixed_precision: bool = True
     seed = 1
     epochs: int = 60
-    batch_size: int = 16        # keep in mind real_batch_size = 2 * batch_size
+    batch_size: int = 4        # keep in mind real_batch_size = 2 * batch_size (4 for calypso, 16 for disco)
     verbose: bool = True
     gpu_ids: tuple = (0,)   # GPU ids for training
     

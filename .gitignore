@@ -1,0 +1,5 @@
+.env
+VIGOR/
+*.sh
+*.sif
+*.def

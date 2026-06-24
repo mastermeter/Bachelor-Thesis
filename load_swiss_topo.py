@@ -33,7 +33,7 @@ def download_swisstopo_aerial_tile(lat, lon, image_id, dataset_dir, size_meters=
         response = requests.get(url, params=params, timeout=15)
         if response.status_code == 200:
             if b"Exception" in response.content or b"xml" in response.content[:100].lower():
-                print(f"[-] Erreur Swisstopo (Serveur) pour l'ID {image_id}")
+                print(f"[-] Server Error for :  {image_id}")
                 return False
                 
             path = f"{dataset_dir}/aerial/{image_id}.jpg"
@@ -41,9 +41,9 @@ def download_swisstopo_aerial_tile(lat, lon, image_id, dataset_dir, size_meters=
                 f.write(response.content)
             return True
         else:
-            print(f"[-] Erreur HTTP {response.status_code} de Swisstopo pour l'ID {image_id}")
+            print(f"[-] Error HTTP {response.status_code}, ID : {image_id}")
             return False
             
     except Exception as e:
-        print(f"[-] Erreur réseau Swisstopo pour l'ID {image_id} : {e}")
+        print(f"[-] Network Error : {image_id} : {e}")
         return False
