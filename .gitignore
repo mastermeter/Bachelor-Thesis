@@ -4,3 +4,5 @@ VIGOR/
 *.sif
 *.def
 *.geojson
+vigor_same_congeo/
+__pycache__/
