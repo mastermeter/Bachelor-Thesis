@@ -32,9 +32,9 @@ class VigorDatasetTrain(Dataset):
         self.transforms_reference = transforms_reference   # satellite
         
         if same_area:
-            self.cities = ['Chicago', 'NewYork', 'SanFrancisco', 'Seattle']
+            self.cities = ['Chicago'] # , 'Chicago', 'NewYork', 'SanFrancisco', 'Seattle'
         else:
-            self.cities = ['NewYork', 'Seattle'] 
+            self.cities = ['Chicago'] 
 
         # load sat list 
         sat_list = []
@@ -66,8 +66,8 @@ class VigorDatasetTrain(Dataset):
                                                                      7:  "sat_np2",
                                                                      10: "sat_np3"})
             
-            df_tmp["path_ground"] = df_tmp.apply(lambda x: f'{data_folder}/ground/{city}/{x.ground}', axis=1)
-            df_tmp["path_sat"] = df_tmp.apply(lambda x: f'{data_folder}/satellite/{city}/{x.sat}', axis=1)
+            df_tmp["path_ground"] = df_tmp.apply(lambda x: f'{data_folder}/{city}/ground/{x.ground}', axis=1)
+            df_tmp["path_sat"] = df_tmp.apply(lambda x: f'{data_folder}/{city}/satellite/{x.sat}', axis=1)
             
             for sat_n in ["sat", "sat_np1", "sat_np2", "sat_np3"]:
                 df_tmp[f'{sat_n}'] = df_tmp[f'{sat_n}'].map(sat2idx)
@@ -563,7 +563,7 @@ class VigorDatasetEval(Dataset):
         for city in self.cities:
             df_tmp = pd.read_csv(f'{data_folder}/splits/{city}/satellite_list.txt', header=None, sep=r'\s+')
             df_tmp = df_tmp.rename(columns={0: "sat"})
-            df_tmp["path"] = df_tmp.apply(lambda x: f'{data_folder}/satellite/{city}/{x.sat}', axis=1)
+            df_tmp["path"] = df_tmp.apply(lambda x: f'{data_folder}/{city}/satellite/{x.sat}', axis=1)
             sat_list.append(df_tmp)
         self.df_sat = pd.concat(sat_list, axis=0).reset_index(drop=True)
         
@@ -589,12 +589,12 @@ class VigorDatasetEval(Dataset):
                                                                      7:  "sat_np2",
                                                                      10: "sat_np3"})
             
-            df_tmp["path_ground"] = df_tmp.apply(lambda x: f'{data_folder}/ground/{city}/{x.ground}', axis=1)
-            df_tmp["path_sat"] = df_tmp.apply(lambda x: f'{data_folder}/satellite/{city}/{x.sat}', axis=1)
+            df_tmp["path_ground"] = df_tmp.apply(lambda x: f'{data_folder}/{city}/panorama/{x.ground}', axis=1)
+            df_tmp["path_sat"] = df_tmp.apply(lambda x: f'{data_folder}/{city}/satellite/{x.sat}', axis=1)
             
-            df_tmp["path_sat_np1"] = df_tmp.apply(lambda x: f'{data_folder}/satellite/{city}/{x.sat_np1}', axis=1)
-            df_tmp["path_sat_np2"] = df_tmp.apply(lambda x: f'{data_folder}/satellite/{city}/{x.sat_np2}', axis=1)
-            df_tmp["path_sat_np3"] = df_tmp.apply(lambda x: f'{data_folder}/satellite/{city}/{x.sat_np3}', axis=1)
+            df_tmp["path_sat_np1"] = df_tmp.apply(lambda x: f'{data_folder}/{city}/satellite/{x.sat_np1}', axis=1)
+            df_tmp["path_sat_np2"] = df_tmp.apply(lambda x: f'{data_folder}/{city}/satellite/{x.sat_np2}', axis=1)
+            df_tmp["path_sat_np3"] = df_tmp.apply(lambda x: f'{data_folder}/{city}/satellite/{x.sat_np3}', axis=1)
 
             
             for sat_n in ["sat", "sat_np1", "sat_np2", "sat_np3"]:

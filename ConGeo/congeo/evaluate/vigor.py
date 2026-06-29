@@ -147,7 +147,7 @@ def calculate_scores(query_features, reference_features, query_labels, reference
         
     print(' - '.join(string)) 
 
-    return results[0]
+    return results
 
 def calculate_scores_train(query_features, reference_features, query_labels, reference_labels, step_size=1000, ranks=[1,5,10]):
 
