@@ -160,6 +160,11 @@ def train_contrast_congeo(train_config, model, dataloader, loss_function, optimi
     model.train()
     
     losses = AverageMeter()
+
+    losses_1 = AverageMeter()
+    losses_2 = AverageMeter()
+    losses_3 = AverageMeter()
+    losses_4 = AverageMeter()
     
     # wait before starting progress bar
     time.sleep(0.1)
@@ -203,6 +208,11 @@ def train_contrast_congeo(train_config, model, dataloader, loss_function, optimi
 
                 loss = loss1+0.5*loss2+0.5*loss3+0.25*loss4 
                 losses.update(loss.item())
+
+                losses_1.update(loss1.items())
+                losses_2.update(loss1.items())
+                losses_3.update(loss1.items())
+                losses_4.update(loss1.items())
                   
             scaler.scale(loss).backward()
             
@@ -267,120 +277,10 @@ def train_contrast_congeo(train_config, model, dataloader, loss_function, optimi
         if train_config.verbose:
             
             monitor = {"loss": "{:.4f}".format(loss.item()),
-                       "loss_avg": "{:.4f}".format(losses.avg),
-                       "lr" : "{:.6f}".format(optimizer.param_groups[0]['lr'])}
-            
-            bar.set_postfix(ordered_dict=monitor)
-        
-        step += 1
-
-    if train_config.verbose:
-        bar.close()
-
-    return losses.avg
-
-
-
-
-    # set model train mode
-    model.train()
-    '''
-    state_dict = model.state_dict()
-    for k,v in state_dict.items():
-        print(k)
-    '''
-    
-    losses = AverageMeter()
-    
-    # wait before starting progress bar
-    time.sleep(0.1)
-    
-    # Zero gradients for first step
-    optimizer.zero_grad(set_to_none=True)
-    
-    step = 1
-    
-    if train_config.verbose:
-        bar = tqdm(dataloader, total=len(dataloader))
-    else:
-        bar = dataloader
-    
-    # for loop over one epoch
-    for query1, query2, reference, ids in bar:
-        
-        if scaler:
-            with autocast():
-            
-                # data (batches) to device   
-                query1 = query1.to(train_config.device)
-                query2 = query2.to(train_config.device)
-                reference = reference.to(train_config.device)
-            
-                # Forward pass
-                query1, query2, reference1 = model(query1, query2, reference)
-                if torch.cuda.device_count() > 1 and len(train_config.gpu_ids) > 1: 
-                    loss1 = loss_function(query1, reference1, model.module.logit_scale.exp())
-                    loss2 = loss_function(query2, reference1, model.module.logit_scale.exp())
-                else:
-                    loss1 = loss_function(query1, reference1, model.logit_scale.exp()) 
-                    loss2 = loss_function(query2, reference1, model.logit_scale.exp()) 
-                loss = loss1+loss2
-                losses.update(loss.item())
-            scaler.scale(loss).backward()
-            
-            # Gradient clipping 
-            if train_config.clip_grad:
-                scaler.unscale_(optimizer)
-                torch.nn.utils.clip_grad_value_(model.parameters(), train_config.clip_grad) 
-            
-            # Update model parameters (weights)
-            scaler.step(optimizer)
-            scaler.update()
-
-            # Zero gradients for next step
-            optimizer.zero_grad()
-            
-            # Scheduler
-            if train_config.scheduler == "polynomial" or train_config.scheduler == "cosine" or train_config.scheduler ==  "constant":
-                scheduler.step()
-   
-        else:
-            # data (batches) to device   
-            query1 = query1.to(train_config.device)
-            query2 = query2.to(train_config.device)
-            reference = reference.to(train_config.device)
-
-            # Forward pass
-
-            query1, query2, reference1 = model(query1, query2, reference)
-            if torch.cuda.device_count() > 1 and len(train_config.gpu_ids) > 1: 
-                loss1 = loss_function(query1, reference1, model.module.logit_scale.exp())
-                loss2 = loss_function(query2, reference1, model.module.logit_scale.exp())
-            else:
-                loss1 = loss_function(query1, reference1, model.logit_scale.exp()) 
-                loss2 = loss_function(query2, reference1, model.logit_scale.exp()) 
-            loss = loss1+loss2
-
-            # Calculate gradient using backward pass
-            loss.backward()
-            
-            # Gradient clipping 
-            if train_config.clip_grad:
-                torch.nn.utils.clip_grad_value_(model.parameters(), train_config.clip_grad)                  
-            
-            # Update model parameters (weights)
-            optimizer.step()
-            # Zero gradients for next step
-            optimizer.zero_grad()
-            
-            # Scheduler
-            if train_config.scheduler == "polynomial" or train_config.scheduler == "cosine" or train_config.scheduler ==  "constant":
-                scheduler.step()
-        
-        
-        if train_config.verbose:
-            
-            monitor = {"loss": "{:.4f}".format(loss.item()),
+                       "l1_avg":"{:.4f}".format(losses_1.avg),
+                       "l2_avg":"{:.4f}".format(losses_1.avg),
+                       "l3_avg":"{:.4f}".format(losses_1.avg),
+                       "l4_avg":"{:.4f}".format(losses_1.avg),
                        "loss_avg": "{:.4f}".format(losses.avg),
                        "lr" : "{:.6f}".format(optimizer.param_groups[0]['lr'])}
             
