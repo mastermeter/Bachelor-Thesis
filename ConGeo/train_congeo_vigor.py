@@ -5,6 +5,9 @@ import shutil
 import sys
 import torch
 import pickle
+import csv
+import matplotlib.pyplot as plt
+import pandas as pd
 from dataclasses import dataclass
 from torch.cuda.amp import GradScaler
 from torch.utils.data import DataLoader
@@ -32,7 +35,7 @@ class Configuration:
     mixed_precision: bool = True
     seed = 1
     epochs: int = 60
-    batch_size: int = 4        # keep in mind real_batch_size = 2 * batch_size (4 for calypso, 16 for disco)
+    batch_size: int = 32        # keep in mind real_batch_size = 2 * batch_size
     verbose: bool = True
     gpu_ids: tuple = (0,)   # GPU ids for training
     
@@ -47,7 +50,7 @@ class Configuration:
  
     # Eval
     batch_size_eval: int = 16
-    eval_every_n_epoch: int = 4      # eval every n Epoch
+    eval_every_n_epoch: int = 1      # eval every n Epoch
     normalize_features: bool = True
 
     # Optimizer 
@@ -65,7 +68,7 @@ class Configuration:
     lr_end: float = 0.0001             #  only for "polynomial"
     
     # Dataset
-    data_folder = "../data/VIGOR"
+    data_folder = "/mnt/vigor"
     same_area: bool = True             # True: same | False: cross
     ground_cutting = 0                 # cut ground upper and lower
    
@@ -401,6 +404,10 @@ if __name__ == '__main__':
     start_epoch = 0   
     best_score = 0
     
+    history_file = "training_history.csv"
+    with open(history_file, mode="w", newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(["epoch", "train_loss", "recall_1"])
 
     for epoch in range(1, config.epochs+1):
         
@@ -431,6 +438,11 @@ if __name__ == '__main__':
                                ranks=[1, 5, 10],
                                step_size=1000,
                                cleanup=True)
+
+            with open(history_file, mode='a', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow([epoch, train_loss, r1_test[0], r1_test[1], r1_test[2], r1_test[3]])
+            
             
             if config.sim_sample:
                 r1_train, sim_dict = calc_sim(config=config,
@@ -440,29 +452,47 @@ if __name__ == '__main__':
                                               ranks=[1, 5, 10],
                                               step_size=1000,
                                               cleanup=True)
-            if r1_test > best_score:
+            if r1_test[0] > best_score:
 
-                best_score = r1_test
+                best_score = r1_test[0]
 
                 if torch.cuda.device_count() > 1 and len(config.gpu_ids) > 1:
-                    torch.save(model.module.state_dict(), '{}/weights_e{}_{:.4f}.pth'.format(model_path, epoch, r1_test))
+                    torch.save(model.module.state_dict(), '{}/weights_e{}_{:.4f}.pth'.format(model_path, epoch, r1_test[0]))
                 else:
-                    torch.save(model.state_dict(), '{}/weights_e{}_{:.4f}.pth'.format(model_path, epoch, r1_test))
+                    torch.save(model.state_dict(), '{}/weights_e{}_{:.4f}.pth'.format(model_path, epoch, r1_test[0]))
                 
 
         if config.custom_sampling:
             train_dataloader.dataset.shuffle(sim_dict,
                                              neighbour_select=config.neighbour_select,
                                              neighbour_range=config.neighbour_range)
+        
+        
                 
     if torch.cuda.device_count() > 1 and len(config.gpu_ids) > 1:
         torch.save(model.module.state_dict(), '{}/weights_end.pth'.format(model_path))
     else:
-        torch.save(model.state_dict(), '{}/weights_end.pth'.format(model_path))            
-                
+        torch.save(model.state_dict(), '{}/weights_end.pth'.format(model_path))
 
+    df_hist = pd.read_csv("training_history.csv")
+    fig, ax1 = plt.subplots(figsize=(10,6))
 
+    color = 'tab:red'
+    ax1.set_xlabel('Epoch')
+    ax1.set_ylabel('Training Loss', color=color)
+    ax1.plot(df_hist['epoch'], df_hist['recall_1'], color=color, linestyle='-', label='Train Loss')
+    ax1.tick_params(axis='y', labelcolor=color)
 
-
-
-                
+    ax2 = ax1.twinx()
+    color = 'tab:blue'
+    ax2.set_ylabel('Recall@1%', color=color)
+    ax2.plot(df_hist['epoch'], df_hist['train_loss'], color=color, linestyle='--', label='Recall@1')
+    ax2.tick_params(axis='y', labelcolor=color)
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper right')
+    
+    plt.title('Hybrid Learning Curve (ConGeo - VIGOR)')
+    fig.tight_layout()
+    plt.savefig("learning_curve.png")
+    print("Graphic saved")

@@ -11,6 +11,11 @@ def train(train_config, model, dataloader, loss_function, optimizer, scheduler=N
     model.train()
     
     losses = AverageMeter()
+
+    losses_1 = AverageMeter()
+    losses_2 = AverageMeter()
+    losses_3 = AverageMeter()
+    losses_4 = AverageMeter()
     
     # wait before starting progress bar
     time.sleep(0.1)
@@ -278,9 +283,9 @@ def train_contrast_congeo(train_config, model, dataloader, loss_function, optimi
             
             monitor = {"loss": "{:.4f}".format(loss.item()),
                        "l1_avg":"{:.4f}".format(losses_1.avg),
-                       "l2_avg":"{:.4f}".format(losses_1.avg),
-                       "l3_avg":"{:.4f}".format(losses_1.avg),
-                       "l4_avg":"{:.4f}".format(losses_1.avg),
+                       "l2_avg":"{:.4f}".format(losses_2.avg),
+                       "l3_avg":"{:.4f}".format(losses_3.avg),
+                       "l4_avg":"{:.4f}".format(losses_4.avg),
                        "loss_avg": "{:.4f}".format(losses.avg),
                        "lr" : "{:.6f}".format(optimizer.param_groups[0]['lr'])}
             
