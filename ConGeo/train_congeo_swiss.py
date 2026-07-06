@@ -10,7 +10,7 @@ from dataclasses import dataclass
 import matplotlib.pyplot as plt
 import pandas as pd
 import torch
-from torch.cuda.amp import GradScaler
+from torch.amp import GradScaler
 from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
 from transformers import (get_constant_schedule_with_warmup,
@@ -231,7 +231,7 @@ if __name__ == '__main__':
     info_nce_loss = InfoNCE(loss_function=loss_fn, device=config.device)
     loss_function = LossTracker(info_nce_loss)
 
-    scaler = GradScaler(device='cuda', init_scale=2.**10) if config.mixed_precision else None
+    scaler = GradScaler("cuda", init_scale=2.**10) if config.mixed_precision else None
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.lr)
 
     train_steps = len(train_dataloader) * config.epochs
