@@ -231,7 +231,7 @@ if __name__ == '__main__':
     info_nce_loss = InfoNCE(loss_function=loss_fn, device=config.device)
     loss_function = LossTracker(info_nce_loss)
 
-    scaler = GradScaler('cuda', init_scale=2.**10) if config.mixed_precision else None
+    scaler = GradScaler(device='cuda', init_scale=2.**10) if config.mixed_precision else None
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.lr)
 
     train_steps = len(train_dataloader) * config.epochs
