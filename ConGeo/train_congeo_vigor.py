@@ -120,23 +120,33 @@ config = Configuration()
 
 if __name__ == '__main__':
 
-    def calculate_test_loss(model, dataloader, loss_function, device):
+    def calculate_test_loss(model, query_dataloader, reference_dataloader, loss_function, device):
         model.eval()
-        total_loss = 0.0
+        
+        query_features_list = []
+        reference_features_list = []
         
         with torch.no_grad():
-            for batch in dataloader:
+            for img, _ in query_dataloader:
+                img = img.to(device)
+                query_features_list.append(model(img))
+                
+            for img, _ in reference_dataloader:
+                img = img.to(device)
+                reference_features_list.append(model(img))
+                
+        q_feat = torch.cat(query_features_list, dim=0)
+        r_feat = torch.cat(reference_features_list, dim=0)
+        
+        base_loss = loss_function.base_loss_fn
+        
+        if isinstance(model, torch.nn.DataParallel):
+            logit_scale = model.module.logit_scale.exp()
+        else:
+            logit_scale = model.logit_scale.exp()
             
-                query = batch['query'].to(device)
-                reference = batch['reference'].to(device)
-                
-                query_features = model.forward_query(query)
-                reference_features = model.forward_reference(reference)
-                
-                loss = loss_function(query_features, reference_features)
-                total_loss += loss.item()
-                
-        return total_loss / len(dataloader)
+        loss = base_loss(q_feat, r_feat, logit_scale)
+        return loss.item()
 
 
     model_path = "{}/{}/{}".format(config.model_path,
@@ -275,25 +285,30 @@ if __name__ == '__main__':
                                        pin_memory=True)
     
     # Evaluation test loss
-    val_loss_dataset = VigorDatasetTrainConGeo(
+    val_query_dataset = VigorDatasetEval(
         data_folder=config.data_folder,
+        split="test",
+        img_type="query",
         same_area=config.same_area,
-        is_train=False,
-        transforms_query1=ground_transforms_val,
-        transforms_query2=ground_transforms_val,
-        transforms_reference1=sat_transforms_val,
-        transforms_reference2=sat_transforms_val,
-        prob_flip=0.0,
-        prob_rotate=0.0,
-        shuffle_batch_size=config.batch_size
+        transforms=ground_transforms_val
     )
     
-    val_loss_dataloader = DataLoader(
-        val_loss_dataset,
-        batch_size=config.batch_size,
-        num_workers=config.num_workers,
-        shuffle=False,
-        pin_memory=True
+    val_reference_dataset = VigorDatasetEval(
+        data_folder=config.data_folder,
+        split="test",
+        img_type="reference",
+        same_area=config.same_area,
+        transforms=sat_transforms_val
+    )
+    
+    val_query_dataloader = DataLoader(
+        val_query_dataset, batch_size=config.batch_size_eval,
+        num_workers=config.num_workers, shuffle=False, pin_memory=True
+    )
+    
+    val_reference_dataloader = DataLoader(
+        val_reference_dataset, batch_size=config.batch_size_eval,
+        num_workers=config.num_workers, shuffle=False, pin_memory=True
     )
     
     
@@ -495,7 +510,8 @@ if __name__ == '__main__':
 
             test_loss = calculate_test_loss(
                 model=model,
-                dataloader=val_loss_dataloader,
+                query_dataloader=val_query_dataloader,
+                reference_dataloader=val_reference_dataloader,
                 loss_function=loss_function,
                 device=config.device
             )
