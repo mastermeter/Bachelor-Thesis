@@ -106,8 +106,8 @@ class LossTracker(torch.nn.Module):
         self.base_loss_fn = base_loss_fn
         self.batch_losses = [] 
 
-    def forward(self, query_features, reference_features):
-        loss = self.base_loss_fn(query_features, reference_features)
+    def forward(self, query_features, reference_features, *args, **kwargs):
+        loss = self.base_loss_fn(query_features, reference_features, *args, **kwargs)
         self.batch_losses.append(loss.item())
         return loss
 
