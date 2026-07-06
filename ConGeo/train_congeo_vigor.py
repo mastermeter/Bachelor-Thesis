@@ -296,12 +296,12 @@ if __name__ == '__main__':
     
     # Evaluation test loss
     val_loss_dataset = VigorDatasetTrainConGeo(
-        data_folder=config.datafolder,
+        data_folder=config.data_folder,
         same_are=config.same_area,
         transforms_query1=ground_transforms_val,
         transforms_query2=ground_transforms_val,
-        transforms_reference1=sat_transform_val,
-        transforms_reference2=sat_transform_val,
+        transforms_reference1=sat_transforms_val,
+        transforms_reference2=sat_transforms_val,
         prob_flip=0.0,
         prob_rotate=0.0,
         shuffle_batch_size=config.batch_size
@@ -518,7 +518,7 @@ if __name__ == '__main__':
                 loss_function=loss_function,
                 device=config.device
             )
-            
+
             print("Epoch: {}, Test Loss = {:.3f}".format(epoch, test_loss))
         
             r1_test, test_hit_rate = evaluate(config=config,
