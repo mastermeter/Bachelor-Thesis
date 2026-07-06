@@ -70,7 +70,7 @@ class Configuration:
     # Dataset
     data_folder = "/mnt/vigor"
     same_area: bool = True             # True: same | False: cross
-    ground_cutting = 0                 # cut ground upper and lower
+    ground_cutting = 0                # cut ground upper and lower
    
     # Augment Images
     prob_rotate: float = 0.75          # rotates the sat image and ground images simultaneously
