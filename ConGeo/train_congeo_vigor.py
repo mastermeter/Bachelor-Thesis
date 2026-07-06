@@ -297,7 +297,7 @@ if __name__ == '__main__':
     # Evaluation test loss
     val_loss_dataset = VigorDatasetTrainConGeo(
         data_folder=config.data_folder,
-        same_are=config.same_area,
+        same_area=config.same_area,
         transforms_query1=ground_transforms_val,
         transforms_query2=ground_transforms_val,
         transforms_reference1=sat_transforms_val,
