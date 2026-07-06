@@ -5,4 +5,4 @@ VIGOR/
 *.geojson
 vigor_same_congeo/
 __pycache__/
-log/
+logs/
