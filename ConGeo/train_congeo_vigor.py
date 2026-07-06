@@ -34,7 +34,7 @@ class Configuration:
     # Training 
     mixed_precision: bool = True
     seed = 1
-    epochs: int = 60
+    epochs: int = 2
     batch_size: int = 32        # keep in mind real_batch_size = 2 * batch_size
     verbose: bool = True
     gpu_ids: tuple = (0,)   # GPU ids for training
@@ -63,8 +63,8 @@ class Configuration:
     
     # Learning Rate
     lr: float = 0.0001                  # 1 * 10^-4 for ViT | 1 * 10^-1 for CNN
-    scheduler: str = "cosine"          # "polynomial" | "cosine" | "constant" | None
-    warmup_epochs: int = 1
+    scheduler: str = None               # "polynomial" | "cosine" | "constant" | None
+    warmup_epochs: int = 0
     lr_end: float = 0.0001             #  only for "polynomial"
     
     # Dataset
