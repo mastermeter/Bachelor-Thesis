@@ -217,10 +217,10 @@ def train_contrast_congeo(train_config, model, dataloader, loss_function, optimi
                 current_lr = optimizer.param_groups[0]['lr']
                 epoch_batch_losses.append([loss.item(), current_lr])
 
-                losses_1.update(loss1.items())
-                losses_2.update(loss2.items())
-                losses_3.update(loss3.items())
-                losses_4.update(loss4.items())
+                losses_1.update(loss1.item())
+                losses_2.update(loss2.item())
+                losses_3.update(loss3.item())
+                losses_4.update(loss4.item())
                   
             scaler.scale(loss).backward()
             
