@@ -128,19 +128,16 @@ if __name__ == '__main__':
         
         with torch.no_grad():
             for batch in dataloader:
-                # Extraction des images du dictionnaire du batch
-                q1 = batch['query1'].to(device)
-                q2 = batch['query2'].to(device)
-                r1 = batch['reference1'].to(device)
-                r2 = batch['reference2'].to(device)
+                q1 = batch[0].to(device)
+                q2 = batch[1].to(device)
+                r1 = batch[2].to(device)
+                r2 = batch[3].to(device)
                 
-                # Passage dans le modèle (comme dans trainer.py)
                 features_q1 = model(q1)
                 features_q2 = model(q2)
                 features_r1 = model(r1)
                 features_r2 = model(r2)
                 
-                # Récupération de l'échelle des logits
                 if isinstance(model, torch.nn.DataParallel):
                     logit_scale = model.module.logit_scale.exp()
                 else:
