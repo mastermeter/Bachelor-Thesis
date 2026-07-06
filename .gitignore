@@ -7,4 +7,4 @@ vigor_same_congeo/
 __pycache__/
 logs/
 tmp*/
-*.csv/
+*.csv
