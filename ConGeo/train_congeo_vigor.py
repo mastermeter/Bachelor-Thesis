@@ -120,33 +120,43 @@ config = Configuration()
 
 if __name__ == '__main__':
 
-    def calculate_test_loss(model, query_dataloader, reference_dataloader, loss_function, device):
+    def calculate_test_loss(model, dataloader, loss_function, device):
         model.eval()
         
-        query_features_list = []
-        reference_features_list = []
+        total_loss = 0.0
+        steps = 0
         
         with torch.no_grad():
-            for img, _ in query_dataloader:
-                img = img.to(device)
-                query_features_list.append(model(img))
+            for batch in dataloader:
+                # Extraction des images du dictionnaire du batch
+                q1 = batch['query1'].to(device)
+                q2 = batch['query2'].to(device)
+                r1 = batch['reference1'].to(device)
+                r2 = batch['reference2'].to(device)
                 
-            for img, _ in reference_dataloader:
-                img = img.to(device)
-                reference_features_list.append(model(img))
+                # Passage dans le modèle (comme dans trainer.py)
+                features_q1 = model(q1)
+                features_q2 = model(q2)
+                features_r1 = model(r1)
+                features_r2 = model(r2)
                 
-        q_feat = torch.cat(query_features_list, dim=0)
-        r_feat = torch.cat(reference_features_list, dim=0)
-        
-        base_loss = loss_function.base_loss_fn
-        
-        if isinstance(model, torch.nn.DataParallel):
-            logit_scale = model.module.logit_scale.exp()
-        else:
-            logit_scale = model.logit_scale.exp()
-            
-        loss = base_loss(q_feat, r_feat, logit_scale)
-        return loss.item()
+                # Récupération de l'échelle des logits
+                if isinstance(model, torch.nn.DataParallel):
+                    logit_scale = model.module.logit_scale.exp()
+                else:
+                    logit_scale = model.logit_scale.exp()
+                
+                loss1 = loss_function.base_loss_fn(features_q1, features_r1, logit_scale)
+                loss2 = loss_function.base_loss_fn(features_q1, features_q2, logit_scale)
+                loss3 = loss_function.base_loss_fn(features_r1, features_r2, logit_scale)
+                loss4 = loss_function.base_loss_fn(features_r1, features_q2, logit_scale)
+                
+                batch_loss = loss1 + 0.5 * loss2 + 0.5 * loss3 + 0.25 * loss4
+                
+                total_loss += batch_loss.item()
+                steps += 1
+                
+        return total_loss / steps if steps > 0 else 0.0
 
 
     model_path = "{}/{}/{}".format(config.model_path,
@@ -285,30 +295,24 @@ if __name__ == '__main__':
                                        pin_memory=True)
     
     # Evaluation test loss
-    val_query_dataset = VigorDatasetEval(
-        data_folder=config.data_folder,
-        split="test",
-        img_type="query",
-        same_area=config.same_area,
-        transforms=ground_transforms_val
+    val_loss_dataset = VigorDatasetTrainConGeo(
+        data_folder=config.datafolder,
+        same_are=config.same_area,
+        transforms_query1=ground_transforms_val,
+        transforms_query2=ground_transforms_val,
+        transforms_reference1=sat_transform_val,
+        transforms_reference2=sat_transform_val,
+        prob_flip=0.0,
+        prob_rotate=0.0,
+        shuffle_batch_size=config.batch_size
     )
     
-    val_reference_dataset = VigorDatasetEval(
-        data_folder=config.data_folder,
-        split="test",
-        img_type="reference",
-        same_area=config.same_area,
-        transforms=sat_transforms_val
-    )
-    
-    val_query_dataloader = DataLoader(
-        val_query_dataset, batch_size=config.batch_size_eval,
-        num_workers=config.num_workers, shuffle=False, pin_memory=True
-    )
-    
-    val_reference_dataloader = DataLoader(
-        val_reference_dataset, batch_size=config.batch_size_eval,
-        num_workers=config.num_workers, shuffle=False, pin_memory=True
+    val_loss_dataloader=DataLoader(
+        val_loss_dataset,
+        batch_size=config.batch_size,
+        num_workers=config.num_workers,
+        shuffle=False,
+        pin_memory=True,
     )
     
     
@@ -510,11 +514,11 @@ if __name__ == '__main__':
 
             test_loss = calculate_test_loss(
                 model=model,
-                query_dataloader=val_query_dataloader,
-                reference_dataloader=val_reference_dataloader,
+                dataloader=val_loss_dataloader,
                 loss_function=loss_function,
                 device=config.device
             )
+            
             print("Epoch: {}, Test Loss = {:.3f}".format(epoch, test_loss))
         
             r1_test, test_hit_rate = evaluate(config=config,
