@@ -165,6 +165,7 @@ def train_contrast_congeo(train_config, model, dataloader, loss_function, optimi
     model.train()
     
     losses = AverageMeter()
+    epoch_batch_losses = []
 
     losses_1 = AverageMeter()
     losses_2 = AverageMeter()
@@ -213,6 +214,8 @@ def train_contrast_congeo(train_config, model, dataloader, loss_function, optimi
 
                 loss = loss1+0.5*loss2+0.5*loss3+0.25*loss4 
                 losses.update(loss.item())
+                current_lr = optimizer.param_groups[0]['lr']
+                epoch_batch_losses.append([loss.item(), current_lr])
 
                 losses_1.update(loss1.items())
                 losses_2.update(loss1.items())
@@ -296,4 +299,4 @@ def train_contrast_congeo(train_config, model, dataloader, loss_function, optimi
     if train_config.verbose:
         bar.close()
 
-    return losses.avg
+    return losses.avg, epoch_batch_losses

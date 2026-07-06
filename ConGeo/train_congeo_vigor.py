@@ -100,6 +100,17 @@ class Configuration:
     fov: float=90 # eval fov (with random shift)
     random_fov: bool=False # if True, plase set train_fov to 360
 
+class LossTracker(torch.nn.Module):
+    def __init__(self, base_loss_fn):
+        super().__init__()
+        self.base_loss_fn = base_loss_fn
+        self.batch_losses = [] 
+
+    def forward(self, query_features, reference_features):
+        loss = self.base_loss_fn(query_features, reference_features)
+        self.batch_losses.append(loss.item())
+        return loss
+
 #-----------------------------------------------------------------------------#
 # Train Config                                                                #
 #-----------------------------------------------------------------------------#
@@ -108,6 +119,24 @@ config = Configuration()
 
 
 if __name__ == '__main__':
+
+    def calculate_test_loss(model, dataloader, loss_function, device):
+        model.eval()
+        total_loss = 0.0
+        
+        with torch.no_grad():
+            for batch in dataloader:
+            
+                query = batch['query'].to(device)
+                reference = batch['reference'].to(device)
+                
+                query_features = model.forward_query(query)
+                reference_features = model.forward_reference(reference)
+                
+                loss = loss_function(query_features, reference_features)
+                total_loss += loss.item()
+                
+        return total_loss / len(dataloader)
 
 
     model_path = "{}/{}/{}".format(config.model_path,
@@ -245,6 +274,32 @@ if __name__ == '__main__':
                                        shuffle=False,
                                        pin_memory=True)
     
+    # Evaluation test loss
+    val_loss_dataset = VigorDatasetTrainConGeo(
+        data_folder=config.data_folder,
+        same_area=config.same_area,
+        split="test",
+        transforms_query1=ground_transforms_val,
+        transforms_query2=ground_transforms_val,
+        transforms_reference1=sat_transforms_val,
+        transforms_reference2=sat_transforms_val,
+        prob_flip=0.0,
+        prob_rotate=0.0,
+        shuffle_batch_size=config.batch_size
+    )
+    
+    val_loss_dataloader = DataLoader(
+        val_loss_dataset,
+        batch_size=config.batch_size,
+        num_workers=config.num_workers,
+        shuffle=False,
+        pin_memory=True
+    )
+    
+    history_file = "training_history.csv"
+    with open(history_file, mode="w", newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(["epoch", "train_loss", "test_loss", "recall_1"])
     
     print("Query Images Test:", len(query_dataset_test))
     print("Reference Images Test:", len(reference_dataset_test))
@@ -303,9 +358,11 @@ if __name__ == '__main__':
     #-----------------------------------------------------------------------------#
 
     loss_fn = torch.nn.CrossEntropyLoss(label_smoothing=config.label_smoothing)
-    loss_function = InfoNCE(loss_function=loss_fn,
+    info_nce_loss = InfoNCE(loss_function=loss_fn,
                             device=config.device,
                             )
+    
+    loss_function = LossTracker(info_nce_loss)
 
     if config.mixed_precision:
         scaler = GradScaler(init_scale=2.**10)
@@ -407,14 +464,17 @@ if __name__ == '__main__':
     history_file = "training_history.csv"
     with open(history_file, mode="w", newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(["epoch", "train_loss", "recall_1"])
+        writer.writerow(["step", "epoch", "train_loss", "test_loss", "lr", "recall_1", "recall_5", "recall_10", "recall_top1", "hit_rate"])
+    
+    global_step = 0
 
     for epoch in range(1, config.epochs+1):
         
         print("\n{}[Epoch: {}]{}".format(30*"-", epoch, 30*"-"))
-        
 
-        train_loss =  train_contrast_congeo(config,
+        loss_function.batch_losses =  []
+
+        train_loss_average, batch_data =  train_contrast_congeo(config,
                            model,
                            dataloader=train_dataloader,
                            loss_function=loss_function,
@@ -422,26 +482,47 @@ if __name__ == '__main__':
                            scheduler=scheduler,
                            scaler=scaler)
         
+        with open(history_file, mode='a', newline='') as f:
+            writer = csv.writer(f)
+            for b_loss, b_lr in batch_data:
+                writer.writerow([global_step, epoch, b_loss, "", b_lr, "", "", "", "", ""])
+                global_step += 1
+        
         print("Epoch: {}, Train Loss = {:.3f}, Lr = {:.6f}".format(epoch,
-                                                                   train_loss,
+                                                                   train_loss_average,
                                                                    optimizer.param_groups[0]['lr']))
         
         # evaluate
         if (epoch % config.eval_every_n_epoch == 0 and epoch != 0) or epoch == config.epochs:
         
             print("\n{}[{}]{}".format(30*"-", "Evaluate", 30*"-"))
+
+            test_loss = calculate_test_loss(
+                model=model,
+                dataloader=val_loss_dataloader,
+                loss_function=loss_function,
+                device=config.device
+            )
+            print("Epoch: {}, Test Loss = {:.3f}".format(epoch, test_loss))
         
-            r1_test = evaluate(config=config,
+            r1_test, test_hit_rate = evaluate(config=config,
                                model=model,
                                reference_dataloader=reference_dataloader_test,
                                query_dataloader=query_dataloader_test, 
                                ranks=[1, 5, 10],
                                step_size=1000,
                                cleanup=True)
-
+            current_epoch_lr = optimizer.param_groups[0]['lr']
             with open(history_file, mode='a', newline='') as f:
                 writer = csv.writer(f)
-                writer.writerow([epoch, train_loss, r1_test[0], r1_test[1], r1_test[2], r1_test[3]])
+                writer.writerow([global_step, 
+                                 epoch, 
+                                 train_loss_average, 
+                                 test_loss, 
+                                 current_epoch_lr,
+                                 r1_test[0], r1_test[1], r1_test[2], r1_test[3],
+                                 test_hit_rate
+                                ])
             
             
             if config.sim_sample:
@@ -474,25 +555,59 @@ if __name__ == '__main__':
     else:
         torch.save(model.state_dict(), '{}/weights_end.pth'.format(model_path))
 
-    df_hist = pd.read_csv("training_history.csv")
-    fig, ax1 = plt.subplots(figsize=(10,6))
-
-    color = 'tab:red'
-    ax1.set_xlabel('Epoch')
-    ax1.set_ylabel('Training Loss', color=color)
-    ax1.plot(df_hist['epoch'], df_hist['recall_1'], color=color, linestyle='-', label='Train Loss')
-    ax1.tick_params(axis='y', labelcolor=color)
-
-    ax2 = ax1.twinx()
-    color = 'tab:blue'
-    ax2.set_ylabel('Recall@1%', color=color)
-    ax2.plot(df_hist['epoch'], df_hist['train_loss'], color=color, linestyle='--', label='Recall@1')
-    ax2.tick_params(axis='y', labelcolor=color)
-    lines1, labels1 = ax1.get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels()
-    ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper right')
+    # -----------------------------------------------------------------------------#
+    # Graph                                                                        #
+    # -----------------------------------------------------------------------------#
     
-    plt.title('Hybrid Learning Curve (ConGeo - VIGOR)')
-    fig.tight_layout()
-    plt.savefig("learning_curve.png")
-    print("Graphic saved")
+    df_hist = pd.read_csv("training_history.csv")
+    df_eval = df_hist.dropna(subset=['test_loss'])
+
+
+    fig1, ax_loss = plt.subplots(figsize=(12, 6))
+
+    #Loss
+    color_loss = 'tab:red'
+    ax_loss.set_xlabel('Global Training Steps (Batches)')
+    ax_loss.set_ylabel('Loss', color=color_loss)
+    line_train = ax_loss.plot(df_hist['step'], df_hist['train_loss'], color=color_loss, alpha=0.25, label='Train Loss (Batch)')
+    line_test = ax_loss.plot(df_eval['step'], df_eval['test_loss'], color='tab:orange', marker='o', linestyle='-', label='Test Loss (Epoch)')
+    ax_loss.tick_params(axis='y', labelcolor=color_loss)
+    ax_loss.grid(True, linestyle=':', alpha=0.5)
+
+    #Learning rate
+    ax_lr = ax_loss.twinx()
+    color_lr = 'tab:green'
+    ax_lr.set_ylabel('Learning Rate', color=color_lr)
+
+    line_lr = ax_lr.plot(df_hist['step'], df_hist['lr'], color=color_lr, linestyle='-', alpha=0.7, label='Learning Rate')
+
+    ax_lr.tick_params(axis='y', labelcolor=color_lr)
+    ax_lr.yaxis.get_major_formatter().set_powerlimits((0, 0))
+
+    lines1 = line_train + line_test + line_lr
+    labels1 = [l.get_label() for l in lines1]
+    ax_loss.legend(lines1, labels1, loc='upper right')
+    
+    plt.title('Loss Evolution & Learning Rate Schedule')
+    fig1.tight_layout()
+    plt.savefig("learning_curve_loss_lr.png")
+
+    fig2, ax_perf = plt.subplots(figsize=(10, 6))
+
+    ax_perf.set_xlabel('Global Training Steps (Batches)')
+    ax_perf.set_ylabel('Score (%)')
+
+    line_r1 = ax_perf.plot(df_eval['step'], df_eval['recall_1'], color='tab:blue', marker='s', linestyle='-', label='Recall@1')
+    line_r5 = ax_perf.plot(df_eval['step'], df_eval['recall_5'], color='teal', marker='^', linestyle='-', label='Recall@5')
+    line_r10 = ax_perf.plot(df_eval['step'], df_eval['recall_10'], color='purple', marker='x', linestyle='-', label='Recall@10')
+    line_rtop = ax_perf.plot(df_eval['step'], df_eval['recall_top1'], color='navy', marker='d', linestyle='-', label='Recall@top1%')
+    line_hit_rate = ax_perf.plot(df_eval['step'], df_eval['hit_rate'], color='magenta', marker='o', linestyle='--', linewidth=2, label='Hit Rate')
+
+    ax_perf.set_ylim(-5, 105)
+    ax_perf.grid(True, linestyle=':', alpha=0.5)
+    ax_perf.legend(loc='lower right')
+    
+    plt.title('Evaluation Metrics (Recalls & Hit Rate)')
+    fig2.tight_layout()
+    plt.savefig("learning_curve_metrics.png")
+    

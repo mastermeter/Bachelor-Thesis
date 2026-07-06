@@ -21,14 +21,14 @@ def evaluate(config,
     query_features, query_labels = predict(config, model, query_dataloader)
     
     print("Compute Scores:")
-    r1 =  calculate_scores(query_features, reference_features, query_labels, reference_labels, step_size=step_size, ranks=ranks) 
+    results, hit_rate =  calculate_scores(query_features, reference_features, query_labels, reference_labels, step_size=step_size, ranks=ranks) 
         
     # cleanup and free memory on GPU
     if cleanup:
         del reference_features, reference_labels, query_features, query_labels
         gc.collect()
         
-    return r1
+    return results, hit_rate
 
 
 def calc_sim(config,
@@ -147,7 +147,7 @@ def calculate_scores(query_features, reference_features, query_labels, reference
         
     print(' - '.join(string)) 
 
-    return results
+    return results, hit_rate
 
 def calculate_scores_train(query_features, reference_features, query_labels, reference_labels, step_size=1000, ranks=[1,5,10]):
 
