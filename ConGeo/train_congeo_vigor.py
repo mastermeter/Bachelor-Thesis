@@ -278,7 +278,7 @@ if __name__ == '__main__':
     val_loss_dataset = VigorDatasetTrainConGeo(
         data_folder=config.data_folder,
         same_area=config.same_area,
-        split="test",
+        is_train=False,
         transforms_query1=ground_transforms_val,
         transforms_query2=ground_transforms_val,
         transforms_reference1=sat_transforms_val,
@@ -296,10 +296,6 @@ if __name__ == '__main__':
         pin_memory=True
     )
     
-    history_file = "training_history.csv"
-    with open(history_file, mode="w", newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(["epoch", "train_loss", "test_loss", "recall_1"])
     
     print("Query Images Test:", len(query_dataset_test))
     print("Reference Images Test:", len(reference_dataset_test))
