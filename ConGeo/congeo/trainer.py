@@ -218,9 +218,9 @@ def train_contrast_congeo(train_config, model, dataloader, loss_function, optimi
                 epoch_batch_losses.append([loss.item(), current_lr])
 
                 losses_1.update(loss1.items())
-                losses_2.update(loss1.items())
-                losses_3.update(loss1.items())
-                losses_4.update(loss1.items())
+                losses_2.update(loss2.items())
+                losses_3.update(loss3.items())
+                losses_4.update(loss4.items())
                   
             scaler.scale(loss).backward()
             
