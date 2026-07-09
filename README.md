@@ -2,7 +2,37 @@
 
 This repository containt all the code related to my bachelor thesis.
 
-The main subject is the cross-view geolocalization apply to swiss datas.
+The main subject is the cross-view geolocalization (CVGC) apply to swiss datas.
+
+## ConGeo
+
+For this work and after a week of research about this subject, I decided to work on ConGeo. A model built by a collaboration of Wuhan University and EPFL. This repository directly forked their work.
+
+- [Their paper](https://arxiv.org/pdf/2403.13965)
+- [Their repository](https://github.com/eceo-epfl/ConGeo)
+
+Their main objective was to provide an efficient tool that can be able to deal with images that are not totally adapted to cross-view geolocalization. More precisely, they manage to have strong result with images that have a non-standard configuration such as reduced FoV (field of view).
+
+## Usage
+
+Because of the large dataset I used and the process required to train a model, I got access to the infrastructure of my school called Dance. To be able to efficiently use this ressource, I had to setup an apptainer and launch my program by slurm jobs. This is why you will find a .def file (that can be considered an equivalent to a dockerfile) and many .sh.
+
+To build the image based on the .def file you will need to write this first :
+
+```bash
+apptainer build <name_of_your_image>.sif rules.def
+```
+
+It will take a couple of minutes to finish this process.
+
+After that, you can now run slurm job (which are the .sh file) with this command :
+
+```bash
+sbatch --export=ALL,USER_NAME=<your_session_name_in_Dance> <name_of_sh_file>.sh
+```
+ 
+ What I consider "your session name" is the name of the folder after home/ in Dance. The name of the sh file in our case would be either : `job_vigor.sh`, `job_sw.sh`, `job_topk.sh`
+
 
 ## Swiss dataset
 
