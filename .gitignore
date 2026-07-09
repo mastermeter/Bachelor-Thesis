@@ -1,7 +1,6 @@
 .env
 VIGOR/
 *.sif
-*.geojson
 vigor_same_congeo/
 __pycache__/
 logs/
