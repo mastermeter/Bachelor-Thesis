@@ -2,7 +2,7 @@
 
 This repository containt all the code related to my bachelor thesis.
 
-The main subject is the cross-view geolocalization (CVGC) apply to swiss datas.
+The main subject is the cross-view geolocalization (CVGL) apply to swiss datas.
 
 ## ConGeo
 
@@ -33,6 +33,9 @@ sbatch --export=ALL,USER_NAME=<your_session_name_in_Dance> <name_of_sh_file>.sh
  
  What I consider "your session name" is the name of the folder after home/ in Dance. The name of the sh file in our case would be either : `job_vigor.sh`, `job_sw.sh`, `job_topk.sh`
 
+ ### Placement of the datasets
+
+ To make training available, you will need to place the datasets I used (VIGOR, a well-known dataset for CVGL and a datatset of my own creation focused on Swizerland) and they both need to be placed in the folder `datasets`. Of course, they also need to be unzip if you get them as zip archive (or tar.gz). Be carefull for VIGOR that subfolder may also be zipped as I recieved them like that too. 
 
 ## Swiss dataset
 
@@ -41,7 +44,6 @@ One objective was to produce a dataset adapted to cross-view geolocalization (st
 To select all the images you will find in the dataset, I selected specific areas in Mapillary where the density of 360-view were relevant. Then, I manually select a border on a [website](https://geojson.io/) to generate a file that containt the area selected. If you want to add new specific area. You will have to provide a new file with new coordinates and adapt 'GEOJSON_INPUT' with the name of the new file you provide. You can find, as example, 3 files which contain an area of 3 places in Switzerland(Lausanne, Zurich, Aigle).
 
 You will also need to create an account to Mapillary and add an app in your [developper workspace](https://www.mapillary.com/developer?locale=fr_FR) to get a token.
-
 
 ## Application on non standard view.
 
