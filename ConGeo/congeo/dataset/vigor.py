@@ -31,10 +31,11 @@ class VigorDatasetTrain(Dataset):
         self.transforms_query = transforms_query           # ground
         self.transforms_reference = transforms_reference   # satellite
         
+        # If you want to try only a part of the dataset you can remove cities in those lists (You can only put them and need to leave at least one)
         if same_area:
-            self.cities = ['Chicago'] # , 'Chicago', 'NewYork', 'SanFrancisco', 'Seattle'
+            self.cities = ['Chicago', 'NewYork', 'SanFrancisco', 'Seattle'] # , 'Chicago', 'NewYork', 'SanFrancisco', 'Seattle'
         else:
-            self.cities = ['Chicago'] 
+            self.cities = ['Chicago', 'NewYork', 'SanFrancisco', 'Seattle'] 
 
         # load sat list 
         sat_list = []

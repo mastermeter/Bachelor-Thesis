@@ -32,12 +32,12 @@ class Configuration:
     model: str = 'convnext_base.fb_in22k_ft_in1k_384'
     img_size: int = 384
 
-    # Fine-Tuning
-    fine_tuning : bool = False
-    folder: str = "203235"
-    vigor_weights: str = "weights_e19_44.3991.pth"
+    # Fine-Tuning (configuration used for finetuning from an exisitng model - must write the path of the model manually)
+    fine_tuning : bool = False # True = mode finetuning / False = Classic training for swiss dataset
+    folder: str = "203235" # Be carefull of where your model you choose are
+    vigor_weights: str = "weights_e19_44.3991.pth" # And also the name of the .pth file
     vigor_weights_path: str = "./vigor_same_congeo/convnext_base.fb_in22k_ft_in1k_384/{}/{}".format(folder, vigor_weights)
-    ft_lr : float = 2e-5
+    ft_lr : float = 2e-5 # In the case of a finetuning process, I initialize the learning rate at a smaller value than the inital one
 
     # Training
     mixed_precision: bool = True

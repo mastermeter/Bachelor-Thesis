@@ -13,6 +13,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
+# This file is inspired by its equivalent dataset/vigor.py
 
 class SwissDatasetTrainConGeo(Dataset):
 
