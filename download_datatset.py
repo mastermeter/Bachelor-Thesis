@@ -21,7 +21,7 @@ DATASET_DIR = "swiss_dataset"
 os.makedirs(f"{DATASET_DIR}/ground", exist_ok=True)
 os.makedirs(f"{DATASET_DIR}/aerial", exist_ok=True)
 
-
+# From the list of link returned, download the related images
 def get_image_download_url(image_id, token):
     url = f"https://graph.mapillary.com/{image_id}"
     headers = {"Authorization": f"OAuth {token}"}
@@ -50,6 +50,7 @@ def main():
     csv_path = f"{DATASET_DIR}/metadata.csv"
     file_exists = os.path.exists(csv_path)
 
+    #Avoid duplication of existing images
     existing_images = set()
     if file_exists:
         with open(csv_path, "r", encoding="utf-8") as csv_file:
@@ -57,7 +58,7 @@ def main():
             next(reader,None)
             for row in reader:
                 existing_images.add(row[0])
-
+    
     with open(csv_path, "a", newline="", encoding="utf-8") as csv_file:
         writer = csv.writer(csv_file)
         if not file_exists:
@@ -65,7 +66,7 @@ def main():
 
         success_count = 0
         total_features = len(panoramic_features)
-
+        
         for index, feature in enumerate(panoramic_features):
             props = feature.get("properties", {})
             img_id = str(props.get("id"))
@@ -100,7 +101,6 @@ def main():
                 aerial_success = download_swisstopo_aerial_tile(lat, lon, img_id, DATASET_DIR)
 
                 if aerial_success:
-                    aerial_path = f"aerial/{img_id}.jpg"
                     writer.writerow([img_id, lat, lon, heading, ground_csv_path, aerial_csv_path])
                     print(f"[+] Pair {img_id} formed : (Angle: {heading}°)")
                     success_count += 1

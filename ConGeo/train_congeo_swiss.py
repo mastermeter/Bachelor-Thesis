@@ -25,7 +25,7 @@ from congeo.trainer import train_contrast_congeo
 from congeo.transforms import get_transforms_train_congeo, get_transforms_val
 from congeo.utils import Logger, setup_system
 
-
+# This file copy the same structure of train_congeo_vigor
 @dataclass
 class Configuration:
 
