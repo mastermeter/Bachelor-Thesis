@@ -3,10 +3,11 @@ import requests
 
 def download_swisstopo_aerial_tile(lat, lon, image_id, dataset_dir, size_meters=100, pixels=640):
 
-    # 1. Conversion WGS84 (GPS mondial) -> LV95 (Projection suisse CH1903+)
-    transformer = Transformer.from_crs("epsg:4326", "epsg:2056", always_xy=True)
+    # 1. Conversion WGS84 (World GPS) -> LV95 (Swiss projection CH1903+) 
+    transformer = Transformer.from_crs("epsg:4326", "epsg:2056", always_xy=True) # LLM help me to find this conversion. Swiss images have their own projection standard
     easting, northing = transformer.transform(lon, lat)
     
+    # 2. Define boundary box around the given coordinate which is at the center of the image
     half_size = size_meters / 2
     bbox_lv95 = [
         easting - half_size,  
@@ -15,6 +16,7 @@ def download_swisstopo_aerial_tile(lat, lon, image_id, dataset_dir, size_meters=
         northing + half_size
     ]
     
+    # 3. Syntax for API request 
     url = "https://wms.geo.admin.ch/"
     params = {
         "SERVICE": "WMS",
@@ -28,7 +30,7 @@ def download_swisstopo_aerial_tile(lat, lon, image_id, dataset_dir, size_meters=
         "HEIGHT": str(pixels),
         "FORMAT": "image/jpeg"
     }
-    
+    # 4. API Request
     try:
         response = requests.get(url, params=params, timeout=15)
         if response.status_code == 200:
