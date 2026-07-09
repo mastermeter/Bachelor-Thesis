@@ -63,7 +63,7 @@ class Configuration:
     
     # Learning Rate
     lr: float = 0.0001                  # 1 * 10^-4 for ViT | 1 * 10^-1 for CNN
-    scheduler: str = None               # "polynomial" | "cosine" | "constant" | None
+    scheduler: str = "cosine"           # "polynomial" | "cosine" | "constant" | None
     warmup_epochs: int = 0
     lr_end: float = 0.0001             #  only for "polynomial"
     

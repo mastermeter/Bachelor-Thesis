@@ -1,6 +1,5 @@
 .env
 VIGOR/
-*.sh
 *.sif
 *.geojson
 vigor_same_congeo/
