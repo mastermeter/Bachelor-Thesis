@@ -78,11 +78,14 @@ class SwissDatasetTrainConGeo(Dataset):
 
         img_ground = self.align_and_crop_ground(img_ground_raw, heading)
 
-        q1 = self.transforms_query1(img_ground)
-        q2 = self.transforms_query2(img_ground.copy())
+        img_ground_np = np.array(img_ground)
+        img_aerial_np = np.array(img_aerial)
 
-        r1 = self.transforms_reference1(img_aerial)
-        r2 = self.transforms_reference2(img_aerial.copy())
+        q1 = self.transforms_query1(image=img_ground_np)['image']
+        q2 = self.transforms_query2(image=img_ground_np.copy())['image']
+
+        r1 = self.transforms_reference1(image=img_aerial_np)['image']
+        r2 = self.transforms_reference2(image=img_aerial_np.copy())['image']
 
         if self.debug and idx < 5:
             try:
@@ -92,7 +95,7 @@ class SwissDatasetTrainConGeo(Dataset):
             except Exception:
                 pass
 
-        return [q1, q2, r1, r2]
+        return [q1, q2, r1, r2, torch.tensor(int(image_id), dtype=torch.int64)]
     
 class SwissDatasetEval(Dataset):
     def __init__(self, df, data_folder, img_type, transforms, ground_cutting=0):
@@ -108,6 +111,7 @@ class SwissDatasetEval(Dataset):
     
     def __getitem__(self, idx):
         row = self.df.iloc[idx]
+        image_id = row['image_id']
 
         if self.img_type == "reference":
             img_path = os.path.join(self.data_folder, row["aerial_path"])
@@ -129,8 +133,9 @@ class SwissDatasetEval(Dataset):
                 img_raw = img_raw.crop((0,0, w, h - self.ground_cutting))
             
             img = img_raw
-            
+        
+        img_np = np.array(img)
 
-        img_tensor = self.transforms(img)
-        return img_tensor, idx
+        img_tensor = self.transforms(image=img_np)['image']
+        return img_tensor, torch.tensor(int(image_id), dtype=torch.int64)
 
