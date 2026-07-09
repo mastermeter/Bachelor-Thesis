@@ -45,6 +45,8 @@ To select all the images you will find in the dataset, I selected specific areas
 
 You will also need to create an account to Mapillary and add an app in your [developper workspace](https://www.mapillary.com/developer?locale=fr_FR) to get a token.
 
+For theses programs specifically, I didn't use Dance but download them more classicaly. If you want to use it you will have to create a virtual environment and add the libraires listed in the `requirements.txt` file.
+
 ## Application on non standard view.
 
 As a conclusion to this work. I had the possibility to use RTS archive to gather images to test the efficiency of the system. For that, I also created a small dataset with some images that could be considered "street-view" and get the corresponding satellite view the same way that with my swiss datatset. I also get satellite images around the objective to see the efficiency of the system. A archive of this small experimental dataset can also be found in swisstransfer : [Link](https://www.swisstransfer.com/d/458acd10-c194-4795-97c3-0238a8f83b5f)
