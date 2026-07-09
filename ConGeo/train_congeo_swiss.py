@@ -32,8 +32,16 @@ class Configuration:
     model: str = 'convnext_base.fb_in22k_ft_in1k_384'
     img_size: int = 384
 
+    # Fine-Tuning
+    fine_tuning : bool = False
+    folder: str = "203235"
+    vigor_weights: str = "weights_e19_44.3991.pth"
+    vigor_weights_path: str = "./vigor_same_congeo/convnext_base.fb_in22k_ft_in1k_384/{}/{}".format(folder, vigor_weights)
+    ft_lr : float = 2e-5
+
     # Training
     mixed_precision: bool = True
+    
     seed = 1
     epochs: int = 60
     batch_size: int = 32
@@ -131,7 +139,7 @@ if __name__ == '__main__':
     model_path = "{}/{}/{}".format(config.model_path,
                                        config.model,
                                        time.strftime("%H%M%S"))
-
+    
     if not os.path.exists(model_path):
         os.makedirs(model_path)
     shutil.copyfile(os.path.basename(__file__), "{}/train.py".format(model_path))
@@ -150,6 +158,23 @@ if __name__ == '__main__':
     model = TimmModel_ConGeo(config.model,
                           pretrained=True,
                           img_size=config.img_size)
+    
+    if config.fine_tuning :
+        print(f" Training on swiss dataset based on VIGOR training {config.vigor_weights_path}")
+        if os.path.exists(config.vigor_weights_path):
+            vigor_state_dict = torch.load(config.vigor_weights_path, map_location='cpu')
+
+            clean_state_dict = {}
+            for k, v in vigor_state_dict.items():
+                name = k.replace("module.", "") if k.startswith("module.") else k
+                clean_state_dict[name] = v
+            
+            metrics_loading = model.load_state_dict(clean_state_dict, strict=False)
+            print("Fine-Tuning initialized successfully")
+        else :
+            raise FileNotFoundError(f"Error: Unable to find Vigor weights at {config.vigor_weights_path}")
+    else :
+        print("Classic training")
     
     data_config = model.get_config()
     print(data_config)
@@ -232,10 +257,13 @@ if __name__ == '__main__':
     loss_function = LossTracker(info_nce_loss)
 
     scaler = GradScaler(init_scale=2.**10) if config.mixed_precision else None
-    optimizer = torch.optim.AdamW(model.parameters(), lr=config.lr)
+    learning_rate = config.ft_lr if config.fine_tuning else config.lr
+    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
     train_steps = len(train_dataloader) * config.epochs
-    warmup_steps = len(train_dataloader) * config.warmup_epochs
+
+    epochs_warmup_to_use = 0 if config.fine_tuning else config.warmup_epochs
+    warmup_steps = len(train_dataloader) * epochs_warmup_to_use
     scheduler = get_cosine_schedule_with_warmup(optimizer, num_training_steps=train_steps, num_warmup_steps=warmup_steps)
 
     #--------------------------------------------------#
@@ -246,7 +274,7 @@ if __name__ == '__main__':
     with open(history_file, mode="w", newline='') as f:
         writer = csv.writer(f)
         writer.writerow([
-            "epoch", "train_loss_avg", "lr",
+            "epoch", "train_loss_batch", "lr",
             "val_loss_total", "val_l1_sol_sat", "val_l2_sol_sol", "val_l3_sat_sat", "val_l4_sat_sol",
             "recall_1", "recall_5", "recall_10", "hit_rate"
         ])
@@ -256,11 +284,14 @@ if __name__ == '__main__':
     for epoch in range(1, config.epochs + 1):
         print("\n{}[Epoch: {}]{}".format(30*"-", epoch, 30*"-"))
         loss_function.batch_losses = []
+        
 
         train_loss_average, batch_data = train_contrast_congeo(
             config, model, dataloader=train_dataloader, loss_function=loss_function,
             optimizer=optimizer, scheduler=scheduler, scaler=scaler
         )
+
+        loss_batch = [item[0] for item in batch_data]
 
         if epoch % config.eval_every_n_epoch == 0:
             print(f"\n{30*'-'}[Detailed Evaluation]{30*'-'}")
@@ -278,11 +309,19 @@ if __name__ == '__main__':
             current_lr = optimizer.param_groups[0]['lr']
             with open(history_file, mode='a', newline='') as f:
                 writer = csv.writer(f)
-                writer.writerow([
-                    epoch, train_loss_average, current_lr,
-                    val_losses['total'], val_losses['l1_sol_sat'], val_losses['l2_sol_sol'], val_losses['l3_sat_sat'], val_losses['l4_sat_sol'],
-                    r1_test[0], r1_test[1], r1_test[2], test_hit_rate
-                ])
+                for i, item in enumerate(batch_data):
+                    batch_loss = item[0]
+                    if i == len(batch_data) - 1:
+                        writer.writerow([
+                            epoch, batch_loss, current_lr,
+                            val_losses['total'], val_losses['l1_sol_sat'], val_losses['l2_sol_sol'], val_losses['l3_sat_sat'], val_losses['l4_sat_sol'],
+                            r1_test[0], r1_test[1], r1_test[2], test_hit_rate
+                        ])
+                    else:
+                        writer.writerow([
+                            epoch, batch_loss, current_lr,
+                            "", "", "", "", "", "", "", "", ""
+                        ])
 
             if r1_test[0] > best_score:
                 best_score = r1_test[0]
@@ -297,30 +336,36 @@ if __name__ == '__main__':
     df_hist = pd.read_csv(history_file)
 
     fig1, ax_loss = plt.subplots(figsize=(12, 6))
-    ax_loss.set_xlabel('Epochs')
+    ax_loss.set_xlabel('Batchs (Itérations)')
     ax_loss.set_ylabel('Loss', color='tab:red')
-    l_train = ax_loss.plot(df_hist['epoch'], df_hist['train_loss_avg'], color='tab:red', alpha=0.5, label='Train Loss')
-    l_test = ax_loss.plot(df_hist['epoch'], df_hist['val_loss_total'], color='tab:orange', marker='o', label='Val Loss')
+    
+    l_train = ax_loss.plot(range(1, len(df_hist) + 1), df_hist['train_loss_batch'], color='tab:red', alpha=0.3, label='Train Loss (each batch)')
+    
+    df_val_only = df_hist.dropna(subset=['val_loss_total'])
+    val_x_coords = df_val_only.index + 1
+    l_val = ax_loss.plot(val_x_coords, df_val_only['val_loss_total'], color='tab:orange', marker='o', markersize=8, linewidth=1.5, label='Validation Loss (each epoch)')
     ax_loss.grid(True, linestyle=':', alpha=0.5)
 
     ax_lr = ax_loss.twinx()
     ax_lr.set_ylabel('Learning Rate', color='tab:green')
-    l_lr = ax_lr.plot(df_hist['epoch'], df_hist['lr'], color='tab:green', alpha=0.7, label='LR')
+    l_lr = ax_lr.plot(range(1, len(df_hist) + 1), df_hist['lr'], color='tab:green', alpha=0.7, linestyle='--', label='LR')
     
-    lines = l_train + l_test + l_lr
+    lines = l_train + l_val + l_lr
     ax_loss.legend(lines, [l.get_label() for l in lines], loc='upper right')
     plt.title('Swiss Dataset: Loss & LR Evolution')
-    plt.savefig(os.path.join(model_path, "swiss_learning_curve_loss_lr.png"))
+    plt.savefig(os.path.join(model_path, "swiss_learning_curve_loss_lr.png"), bbox_inches='tight')
+    plt.close()
 
     fig2, ax_perf = plt.subplots(figsize=(10, 6))
     ax_perf.set_xlabel('Epochs')
     ax_perf.set_ylabel('Score (%)')
-    ax_perf.plot(df_hist['epoch'], df_hist['recall_1'], color='tab:blue', marker='s', label='Recall@1')
-    ax_perf.plot(df_hist['epoch'], df_hist['recall_5'], color='teal', marker='^', label='Recall@5')
-    ax_perf.plot(df_hist['epoch'], df_hist['recall_10'], color='purple', marker='x', label='Recall@10')
-    ax_perf.plot(df_hist['epoch'], df_hist['hit_rate'], color='magenta', marker='o', linestyle='--', label='Hit Rate')
+    ax_perf.plot(df_val_only['epoch'], df_val_only['recall_1'], color='tab:blue', marker='s', label='Recall@1')
+    ax_perf.plot(df_val_only['epoch'], df_val_only['recall_5'], color='teal', marker='^', label='Recall@5')
+    ax_perf.plot(df_val_only['epoch'], df_val_only['recall_10'], color='purple', marker='x', label='Recall@10')
+    ax_perf.plot(df_val_only['epoch'], df_val_only['hit_rate'], color='magenta', marker='o', linestyle='--', label='Hit Rate')
     ax_perf.set_ylim(-5, 105)
     ax_perf.grid(True, linestyle=':', alpha=0.5)
     ax_perf.legend(loc='lower right')
     plt.title('Swiss Dataset: Evaluation Metrics')
-    plt.savefig(os.path.join(model_path,"swiss_learning_curve_metrics.png"))
+    plt.savefig(os.path.join(model_path, "swiss_learning_curve_metrics.png"), bbox_inches='tight')
+    plt.close()
