@@ -1,3 +1,5 @@
+# This files was run without the usage of slurm job/files 
+
 import os
 import csv
 import requests
@@ -85,22 +87,26 @@ def main():
                 continue
 
             try:
+                ground_csv_path = f"ground/{img_id}.jpg"
+                aerial_csv_path = f"aerial/{img_id}.jpg"
+
+                ground_disk_path = os.path.join(DATASET_DIR, ground_csv_path)
                 ground_resp = requests.get(img_url, timeout=15)
                 ground_resp.raise_for_status()
-                ground_path = f"{DATASET_DIR}/ground/{img_id}.jpg"
-                with open(ground_path, "wb") as f:
+
+                with open(ground_disk_path, "wb") as f:
                     f.write(ground_resp.content)
 
                 aerial_success = download_swisstopo_aerial_tile(lat, lon, img_id, DATASET_DIR)
 
                 if aerial_success:
-                    aerial_path = f"{DATASET_DIR}/aerial/{img_id}.jpg"
-                    writer.writerow([img_id, lat, lon, heading, ground_path, aerial_path])
+                    aerial_path = f"aerial/{img_id}.jpg"
+                    writer.writerow([img_id, lat, lon, heading, ground_csv_path, aerial_csv_path])
                     print(f"[+] Pair {img_id} formed : (Angle: {heading}°)")
                     success_count += 1
                 else:
-                    if os.path.exists(ground_path):
-                        os.remove(ground_path)
+                    if os.path.exists(ground_disk_path):
+                        os.remove(ground_disk_path)
 
             except Exception as e:
                 print(f"[-] Error during : {img_id} : {e}")
